@@ -17,13 +17,13 @@ class SmsController extends Controller
 
 public function store(Request $request)
 {
-	$code = rand(1000, 9999); //generate random code
-	$request['code'] = $code; //add code in $request body
+//	$code = rand(1000, 9999); //generate random code
+//	$request['code'] = $code; //add code in $request body
 	$this->smsVerifcation->store($request); //call store method of model
 	return $this->sendSms($request); // send and return its response
 }
 
-public function sendSms($request)
+public function sendSms(Request $request)
  {
 	 $accountSid = config('app.twilio')['TWILIO_ACCOUNT_SID'];
 	 $authToken = config('app.twilio')['TWILIO_AUTH_TOKEN'];
@@ -32,8 +32,10 @@ public function sendSms($request)
 		 $client = new Client(['auth' => [$accountSid, $authToken]]);
 		 $result = $client->post('https://api.twilio.com/2010-04-01/Accounts/'.$accountSid.'/Messages.json',
 		 ['form_params' => [
-		 'Body' => 'CODE: '. $request->code, //set message body
-		 'To' => $request->contact_number,
+		 'Body' => 'Your OTP for delivery confirmation is : '. $request->code .' Please show it to the client to validate funds release.', //set message body
+		 'To' => '+'.$request->contact_number,
+	//	 'Body' => 'CODE: 1234',
+		 //'To' => '+22996062448',
 		 'From' => '+13237471205' //we get this number from twilio
 		 ]]);
 		 return $result;

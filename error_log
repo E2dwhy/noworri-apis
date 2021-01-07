@@ -1,0 +1,10 @@
+[17-May-2020 19:30:56 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:31:24 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:33:12 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:33:18 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:33:26 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:35:02 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:40:50 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:41:26 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 19:57:49 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
+[17-May-2020 21:23:09 UTC] PHP Fatal error:  Interface 'JsonSerializable' not found in /home/nowoylqw/public_html/api/vendor/laravel/framework/src/Illuminate/Support/Enumerable.php on line 11
