@@ -1,0 +1,296 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "NOWORRI Merchant API",
+    "version": "0.1"
+  },
+  "servers": [
+    {
+      "url": "https://api.noworri.com",
+      "description": "Noworri's API for Businesses"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+         "bearerAuth" :{
+            "description": "bearer api_secret_key generated for your business on registration",
+             "type": "http",
+             "scheme": "bearer",
+             "bearerFormat": "JWT"
+         }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Unauthorized access"
+      }
+    }
+  },
+  "paths": {
+    "/api/paywithnoworri": {
+      "post": {
+        "summary": "Noworri Checkout",
+        "description": "",
+        "operationId": "checkout",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "user_id",
+            "description": "the id genrate for your business on registration",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "item_ids",
+            "description": "comma seperated list of the ids of items that your customer is purchasing (the ids that you use to identify your products)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "items",
+            "description": "comma seperated list of item names that your customer is purchasing",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "items_qty",
+            "description": "comma seperated list of item quantities that your customer is purchasing",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "prices",
+            "description": "comma seperated prices of items that your customer is purchasing in the same order as items",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "descriptions",
+            "description": "comma seperated short descriptions of items that your customer is purchasing",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "delivery_phone",
+            "description": "The phone number of the service responsible for delivery of your orders ",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "description": "The currency in which your custormer is passing the order (GHS/NGN)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "callback_url",
+            "description": "The Url of the page you want you users to be redirected to after payment (https://yourpagehere.com)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfull Checkout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "checkout_url": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Requested Resources Not Found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/getbusinesstransactionslist/{user_id}": {
+      "get": {
+        "summary": "Retreive transactions ",
+        "description": "Retreive the list of transactions between you and your customers",
+        "operationId": "getbusinesstransactionslist",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "your ID on registration"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "initiator_id": {
+                      "type": "string"
+                    },
+                    "desctinator_id": {
+                      "type": "string",
+                      "format": "byte"
+                    },
+                    "delivery_phone": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "price": {
+                      "type": "string"
+                    },
+                    "transaction_key": {
+                      "type": "string"
+                    },
+                    "payment_id": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Id value"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Requested Resources Not Found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/getnoworriuserdata": {
+      "get": {
+        "summary": "Retreive User Data ",
+        "description": "Retreive the details of a user registered with Noworri through is phone number",
+        "operationId": "getnoworriuserdata",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "mobile_phone",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Noworri User's phone number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "fits_name": {
+                      "type": "string",
+                      "format": "byte"
+                    },
+                    "user_uid": {
+                      "type": "string"
+                    },
+                    "mobile_phone": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Id value"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Requested Resources Not Found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  }
+}
