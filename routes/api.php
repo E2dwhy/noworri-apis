@@ -51,6 +51,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     Route::post('checkusername', 'AuthController@verifyUserName');
     Route::post('register', 'AuthController@register');
     Route::post('login', 'AuthController@login');
+    Route::post('adminlogin', 'AuthController@adminLogin');
     Route::post('verifyemail', 'AuthController@verifyUserEmail');
     Route::post('sendotptoemail', 'AuthController@sendEmailVerificationCode');
     Route::post('logout', 'AuthController@logout');
@@ -65,6 +66,17 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     Route::post('updatenames','AuthController@updateNames');
     Route::post('pswdreset', 'AuthController@updateForgotPass');
     Route::get('getnoworriusers', 'UserController@getNoworriUsers');
+    
+    //admin
+    Route::post('adminlogin', 'AuthController@adminLogin');
+    Route::get('users', 'UserController@index');
+    Route::get('getadminsummary', 'TransactionController@getAdminSummary');
+    Route::put('approvebusiness/{phone}', 'BusinessController@approveBusiness');
+    Route::put('rejectbusiness/{phone}', 'BusinessController@rejectBusiness');
+    Route::get('getbusinesses', 'BusinessController@getBusinesses');
+    Route::get('getcompanies', 'TrustedCompanyController@getCompanies');
+    Route::put('approvecompany/{phone}', 'TrustedCompanyController@approve');
+    Route::put('rejectcompany/{phone}', 'TrustedCompanyController@reject');
     
     
     //noworri Escrow
@@ -88,7 +100,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     Route::post('initiateuserrefund','TransactionController@initiateRefund');
     Route::post('securewithpaystack', 'TransactionController@secureFundsPayStack');
     Route::post('payfortrustzone', 'TrustedCompanyController@payForTrustZone');
-    Route::post('createrecipient/{user_id}', 'TransactionController@createPaystackRecipient');
+    // Route::post('createrecipient/{user_id}', 'TransactionController@createPaystackRecipient');
     Route::post('paystackrelease', 'TransactionController@releasePaymentPaystack');
     Route::post('initiateRelease/{transaction_id}', 'TransactionController@initiatePayStackRelease');
     Route::get('cancelescrowtransaction', 'TransactionController@cancelEscrowTransaction');
@@ -103,37 +115,59 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     Route::post('initiateuserrefundtest','TransactionsTestController@initiateRefund');
     Route::post('securewithpaystacktest', 'TransactionsTestController@secureFundsPayStack');
     Route::post('payfortrustzonetest', 'TransactionsTestController@payForTrustZone');
-    Route::post('createrecipienttest/{user_id}', 'TransactionsTestController@createPaystackRecipient');
+    // Route::post('createrecipienttest/{user_id}', 'TransactionsTestController@createPaystackRecipient');
     Route::post('paystackreleasetest', 'TransactionsTestController@releasePaymentPaystack');
-    Route::post('initiateReleasetest/{transaction_id}', 'TransactionsTestController@initiatePayStackRelease');
+    Route::post('initiatereleasetest/{transaction_id}', 'TransactionsTestController@initiateSpektraRelease');
+    Route::post('initiatespektrareleasetest', 'TransactionsTestController@initiateSpektraRelease');
     Route::get('cancelescrowtransactiontest', 'TransactionsTestController@cancelEscrowTransaction');
     Route::get('refundslisttest', 'TransactionsTestController@getRefunds');
     Route::get('checkpaymentstatustest', 'TransactionsTestController@checkPaymentStatus');
     Route::get('chektransactionstatustest', 'TransactionsTestController@checkTransactionStatus');
     Route::get('fetchpaysatcktranssactiontest/{id}', 'TransactionsTestController@fetchPaystackTransaction');
     Route::get('resolveaccountnotest', 'TransactionsTestController@resolveAccountNumber');
+      //escrow transactions TEST
+    Route::get('usertransactionstest/{user_id}', 'TransactionsTestController@getTransactionByUser');
+    Route::get('mytransactionslisttest/{user_id}', 'TransactionsTestController@getListTransactions');
+    Route::get('getusertransactionssummarytest/{user_id}', 'TransactionsTestController@getUserTransactionsSummary');
+    Route::get('getusertransactiontest/{transaction_id}', 'TransactionsTestController@getTransactionByTransactionId');
+    Route::get('gettransactionbyreftest/{ref}', 'TransactionsTestController@getTransactionByRef');
+    Route::get('gettransactionfilestest/{transaction_id}', 'TransactionsTestController@getUploadedFiles');
+    Route::get('getsteptransdetailstest/{transaction_id}', 'TransactionsTestController@getStepTransactionDetails');
+    Route::post('verifycodetest', 'TransactionsTestController@verifyReleaseCode');
+    Route::post('releasepaymenttest/{transaction_id}', 'TransactionsTestController@releasePayment');
+    Route::post('cancelTransactiontest/{transaction_key}', 'TransactionsTestController@cancelTransaction');
+    Route::post('approveservicetest/{transaction_id}', 'TransactionsTestController@approveTransaction');
+    Route::post('securefundstest/{transaction_id}', 'TransactionsTestController@secureFunds');
+    Route::post('newtransactiontest', 'TransactionsTestController@store');
+    Route::post('createusertransactiontest', 'TransactionsTestController@createUserTransaction');
+    Route::post('newtransactionuploadtest', 'TransactionsTestController@upload');
 
 
     //send SMS
     Route::post('sendsms', 'SmsController@store');
     Route::post('verifysms', 'SmsController@verifyContact');
+    Route::post('sendtermiisms', 'SmsController@TermiiMessaging');
     
-    
+    // Module Messaging
     Route::put('sendmessage', 'SmsController@sendMessage');
     Route::get('getmessages', 'SmsController@getMessages');
+    Route::get('getmessagebyid/{id}', 'SmsController@getMessageById');
     Route::delete('deletemessages', 'SmsController@deleteMessage');
+    Route::post('sendfile', 'SmsController@sendFileMessage');
+    Route::post('deletesendfile', 'SmsController@deleteFile');
+    Route::get('downloadfile', 'SmsController@downloadFile');
     
+    
+    // test Arduino 
+    Route::get('testtransferqueue','TransactionController@checkTransferQueue');
+    Route::put('updatetransferqueue','TransactionController@updateTransferQueue');
+
     
     //test
     Route::post('callback', 'CallBackUrlController@index');    
     Route::get('sendip', 'CallBackUrlController@sendip');    
     Route::get('anmsendip', 'CallBackUrlController@anmsendip');
     
-    
-    
-    // test Arduino 
-    Route::get('testtransferqueue','TransactionController@checkTransferQueue');
-
 
 Route::group([
     
@@ -188,7 +222,7 @@ Route::group([
    
    //Trust
     Route::post('useridentityfile', 'UserIdentityController@store');
-    Route::put('newtrustedcompany', 'TrustedCompanyController@store');
+    Route::post('newtrustedcompany', 'TrustedCompanyController@store');
     Route::post('newtrustedcompanyupload', 'TrustedCompanyController@upload');
     Route::post('verifyBusinessPhone', 'TrustedCompanyController@verifyBusinessPhone');
     Route::post('verifyAddiPhone', 'TrustedCompanyController@verifyAddiPhone');
@@ -209,10 +243,14 @@ Route::group([
 
     // Business
     Route::post('addbusiness', 'BusinessController@addBusiness');
+    Route::put('approvebusiness/{phone}', 'BusinessController@approveBusiness');
+    Route::put('rejectbusiness/{phone}', 'BusinessController@rejectBusiness');
     Route::post('createbusinesstransaction', 'BusinessController@createBusinessTransaction');
+    Route::post('createbusinesstransactiontest', 'BusinessController@createBusinessTransactionTest');
     Route::post('securebusinessclientsfunds', 'BusinessController@secureFundsForBusiness');
     Route::get('verifybusinessclientspayment/{reference}', 'BusinessController@checkTransactionStatus');
     Route::get('getuserbusiness/{user_id}', 'BusinessController@getBusinessDetails');
+    Route::get('getbusinesses', 'BusinessController@getBusinesses');
     Route::get('getuserbusinessdata/{user_id}', 'BusinessController@getBusinessData');
     Route::get('getbusinesstransactionsdata/{user_id}', 'BusinessController@getBusinessTransactions');
     Route::get('getbusinesstransactionslist/{user_id}', 'BusinessController@getBusinessTransactionsList');
@@ -220,15 +258,16 @@ Route::group([
     Route::get('getnoworriuserdata', 'BusinessController@getNoworriUserData');
     Route::post('verifynoworriuser', 'BusinessController@verifyUser');
     Route::post('sendverificationcode', 'BusinessController@sendVerificationCode');
+    Route::post('sendverificationcodetest', 'BusinessController@sendVerificationCodeTest');
     Route::post('paywithnoworri', 'BusinessController@payWithNoworri');
 
     //user acount details
-    Route::post('adduseraccount/{user_id}', 'UserAccountDetailController@createPaystackRecipient');
+    Route::post('createrecipient/{user_id}', 'UserAccountDetailController@createPaystackRecipient');
     Route::get('getuseraccountdetails/{user_id}', 'UserAccountDetailController@getUserAccountDetails');
     Route::post('deleteduseraccount', 'UserAccountDetailController@deletePaystackRecipient');
     
     //user acount details TEST
-    Route::post('adduseraccounttest/{user_id}', 'UserAccountDetailController@createPaystackRecipientTest');
+    Route::post('createrecipienttest/{user_id}', 'UserAccountDetailController@createPaystackRecipientTest');
     Route::get('getuseraccountdetailstest/{user_id}', 'UserAccountDetailController@getUserAccountDetails');
     Route::post('deleteduseraccounttest', 'UserAccountDetailController@deletePaystackRecipientTest');
 

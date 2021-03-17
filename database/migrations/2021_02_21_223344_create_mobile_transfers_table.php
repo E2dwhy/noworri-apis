@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateModuleMessagesTable extends Migration
+class CreateMobileTransfersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,13 @@ class CreateModuleMessagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('module_messages', function (Blueprint $table) {
+        Schema::create('mobile_transfers', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('message');
+            $table->string('phone_no');
+            $table->string('amount');
+            $table->string('currency');
+            $table->string('start_balance')->default('-1');
+            $table->string('end_balance')->default('-1');
             $table->timestamps();
         });
     }
@@ -27,6 +31,6 @@ class CreateModuleMessagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('module_messages');
+        Schema::dropIfExists('mobile_transfers');
     }
 }

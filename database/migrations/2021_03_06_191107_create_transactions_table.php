@@ -21,9 +21,11 @@ class CreateTransactionsTable extends Migration
             $table->string('transaction_type');
             $table->string('delivery_phone');
             $table->string('name');
-            $table->string('item_qty')->default('1');
-            $table->string('item_id')->nullable();
-            $table->float('price');
+            $table->string('price');
+            
+            $table->longText('items')->nullable();
+            $table->string('transaction_source')->default('vendor');
+            
             $table->string('currency');
             $table->string('release_code');
             $table->integer('release_wrong_code')->default(0);
@@ -38,6 +40,10 @@ class CreateTransactionsTable extends Migration
             $table->integer('deleted')->default(0);
             $table->string('payment_id')->nullable();
             
+            $table->boolean('isUnlocked')->default(0);
+            $table->dateTime('unlockDate')->nullable();
+            $table->string('unlockConfirmState')->nullable();
+            
             $table->string('qty_of_crypto')->nullable();
             $table->string('rate')->nullable();
             $table->string('buyer_wallet')->nullable();
@@ -47,6 +53,7 @@ class CreateTransactionsTable extends Migration
             
             $table->foreign('initiator_id')->references('user_uid')->on('users')->onDelete('cascade');
             $table->foreign('destinator_id')->references('user_uid')->on('users')->onDelete('cascade');
+
         });
     }
 

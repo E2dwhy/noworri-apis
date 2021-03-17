@@ -11,6 +11,7 @@ use App\User;
 use App\Transfer;
 use App\UserTransaction;
 use App\UserAccountDetail;
+use App\MobileTransfer;
 
 use DB;
 use Illuminate\Http\Request;
@@ -31,13 +32,18 @@ use FCM;
     const TRANSACTION_TYPE_SERVICE = "service";
     const TRANSACTION_TYPE_MERCHANDISE = "merchandise";
     
-    const CANCELLED_TRANSACTION_STATE = "0";
-    const PENDING_TRANSACTION_STATE = "1";
-    const ACTIVE_TRANSACTION_STATE = "2";
-    const COMPLETED_TRANSACTION_STATE = "3";
-    const DELETED_TRANSACTION_STATE = "4";
-    const WITHDRAWN_TRANSACTION_STATE = "5";
-    const TRANSACTION_ROLE_SELL = "sell";
+    const TRANSACTION_SOURCE_ECOM = "e-commerce";
+    const TRANSACTION_SOURCE_VENDOR = "vendor";
+
+    const CANCELLED_TRANSACTION_STATE = 0;
+    const PENDING_TRANSACTION_STATE = 1;
+    const ACTIVE_TRANSACTION_STATE = 2;
+    const COMPLETED_TRANSACTION_STATE = 3;
+    const DELETED_TRANSACTION_STATE = 4;
+    const WITHDRAWN_TRANSACTION_STATE = 5;
+    const BATCH_WITHDRAWN_TRANSACTION_STATE = 6;
+    const UNLOCKED_TRANSACTION_STATE = 7;
+    const TRANSACTION_ROLE_SELL = "sell";store
     const TRANSACTION_ROLE_BUY = "buy";
     
     const TRANSACTIONS_FCM_OPERATION = "transaction";
@@ -47,6 +53,13 @@ use FCM;
     
     const PAYSTACK_API_KEY_GH_LIVE = "Bearer sk_live_0130acd21a89939c728442b729f527edf1adc269";
     const PAYSTACK_API_KEY_NG_LIVE = "Bearer sk_test_a265dd37c6d9c794ac67991580b1241d8e0a6636";
+    
+    const SPEKTRA_API_SECRET_KEY = "Bearer 4c53aa8e345e40d8b774d052963b32d02ff84e9406f84ba3ba40d1e4d8268152";
+    
+    const SPEKTRA_API_PUPLIC_KEY =" Bearer 814822cdde7844a0a3e8827e22a551f7";
+    
+    const TERMII_API_KEY = "TLPpodZHjnglaYQHEknDbeuzjWyYrfmLAqROer0oD2W6TjjFPxR0xqaNvdq4vK";
+
     
     const CURRENCY_GH = "GHS";
     const CURRENCY_NG = "NGN";
@@ -140,6 +153,39 @@ class TransactionController extends Controller
         return $ar_result;
 
     }
+    
+    public function sendTermiiMessage($phoneNumber, $message) {
+    $smsmData = $request->all();
+    $curl = curl_init();
+    
+    $smsmData = array(
+        "phoneNumber" => $phoneNumber,
+        "message"=>$message
+        );
+    
+    $post_data = json_encode($smsmData);
+    
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => "https://api.noworri.com/api/sendtermiisms",
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => "",
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => "POST",
+      CURLOPT_POSTFIELDS => $post_data,
+      CURLOPT_HTTPHEADER => array(
+        "Content-Type: application/json"
+      ),
+    ));
+    
+    $response = curl_exec($curl);
+    
+    curl_close($curl);
+    return $response;
+
+}
     
     public function sendFcmToDevice($title, $body, $data_title, $operation, $token){
     
@@ -235,33 +281,38 @@ class TransactionController extends Controller
     }
     
     
-    public function sendSms($data)
+     public function sendSms($data)
      {
          $data = json_decode(json_encode($data), FALSE);
     	 $accountSid = config('app.twilio')['TWILIO_ACCOUNT_SID'];
     	 $authToken = config('app.twilio')['TWILIO_AUTH_TOKEN'];
     	try
     	 {
-    		 $client = new Client(['auth' => [$accountSid, $authToken]]);
-    		 $result = $client->post('https://api.twilio.com/2010-04-01/Accounts/'.$accountSid.'/Messages.json',
-    		 ['form_params' => [
-    		 'Body' => 'The delivery confirmation code is : '. $data->code .'. Please provide the buyer with this code to validate funds release for the seller to get paid.', //set message body
-    		 'To' => $data->contact_number,
-    	     //'Body' => 'CODE: 1234',
-    		 //'To' => '+22996062448',
-    		 'From' => '+13237471205' //we get this number from twilio
-    		 ]]);
+    	     $message = 'The delivery confirmation code is :'. $data->code .'. Deliver the goods  to '.$data->buyer.' (The buyer) and You must provide the code for him to unlock the purchase amount for '.$data->seller.' (The Seller) to get paid';
+    	     $result = $this->sendTermiiMessage($data->contact_number, $message);
+    // 		 $client = new Client(['auth' => [$accountSid, $authToken]]);
+    // 		 $result = $client->post('https://api.twilio.com/2010-04-01/Accounts/'.$accountSid.'/Messages.json',
+    // 		 ['form_params' => [
+    // 		 'Body' => 'The delivery confirmation code is : '. $data->code .'. Please provide the buyer with this code to validate funds release for the seller to get paid.', //set message body
+    // 		 'To' => $data->contact_number,
+    // 	     //'Body' => 'CODE: 1234',
+    // 		 //'To' => '+22996062448',
+    // 		 'From' => '+13237471205' //we get this number from twilio
+    // 		 ]]);
     		 return $result;
     	 }
     		 catch (Exception $e){
     		 echo "Error: " . $e->getMessage();
     	 }
      }
-    public function sendReleaseCode($mobile_phone, $release_code){
+     
+    public function sendReleaseCode($mobile_phone, $release_code, $destinator, $initiator){
 
         $data = array(
 				'code'  =>  $release_code,
-				'contact_number'  =>  $mobile_phone
+				'contact_number'  =>  $mobile_phone,
+				'buyer' => $initiator,
+				'seller'=> $destinator
 			);
 		$this->sendSmsData($data);
         $sms_result = $this->sendSms($data);
@@ -276,9 +327,9 @@ class TransactionController extends Controller
             'initiator_role' => 'required|string|max:155',
             'destinator_id' => 'required',
             'transaction_type' => 'required|string|max:155',
-            'name' => 'required|string|max:155',
-            'price' => 'required|numeric',
-            'requirement' => 'required|string',
+            // 'name' => 'required|string|max:155',
+            // 'price' => 'required',
+            // 'requirement' => 'required|string',
             'etat' => 'integer',
             'delivery_phone' => 'string',
             'currency' => 'string'
@@ -287,9 +338,13 @@ class TransactionController extends Controller
         if ($validator->fails()) {
             return response()->json($validator->errors());
         } else {
-            
 
             $transaction_data = $request->all();
+            if(!isset($transaction_data['name']) || !isset($transaction_data['price'])) {
+                $transaction_data['name'] = 'Transaction';
+                $transaction_data['price'] = 0;
+                $transaction_data['requirement'] = 'Noworri Transaction';
+            }
             $transaction_data['transaction_key'] = $this->generateRef();
             $transaction_data['release_code'] = $this->generatePin();
             $proof_of_payment = $request->file('business_logo');
@@ -375,12 +430,16 @@ class TransactionController extends Controller
             $transaction["initiator"] = $author;
             $transaction["destinator"] = $destinator;
             
-            $sms_result = $this->sendReleaseCode($transaction['delivery_phone'], $transaction_data['release_code']);
+            $initiatorName = $transaction['initiator']['name'].' '.$transaction["initiator"]['first_name'];
+            $destinatorName = $transaction['destinator']['name'].' '.$transaction["destinator"]['first_name'];
+
             if(strtolower($transaction->initiator_role) == TRANSACTION_ROLE_SELL){
-                $sms_result2 = $this->sendReleaseCode($author->mobile_phone, $transaction_data['release_code']);
+                $sms_result2 = $this->sendReleaseCode($author->mobile_phone, $transaction_data['release_code'], $initiatorName, $destinatorName);
+                $sms_result = $this->sendReleaseCode($transaction['delivery_phone'], $transaction_data['release_code'], $initiatorName, $destinatorName);
             }
             else{
-                $sms_result2 = $this->sendReleaseCode($destinator->mobile_phone, $transaction_data['release_code']);
+                $sms_result2 = $this->sendReleaseCode($destinator->mobile_phone, $transaction_data['release_code'], $destinatorName, $initiatorName);
+                $sms_result2 = $this->sendReleaseCode($transaction['delivery_phone'], $transaction_data['release_code'], $destinatorName, $initiatorName);
             }
             
             /*
@@ -394,7 +453,7 @@ class TransactionController extends Controller
             
           $si =  $this->sendFcmToDevice("Noworri", " Your Contract was successfully created on noworri.com", "New Created Contract", TRANSACTIONS_FCM_OPERATION, $author['fcm_token']); 
           $sd = $this->sendFcmToDevice("Noworri", $author['mobile_phone']." has started a new transaction with you", "New Created Contract", TRANSACTIONS_FCM_OPERATION, $destinator['fcm_token']); 
-            return Response()->json($transaction);
+          return Response()->json($transaction);
         }
     }
     
@@ -425,7 +484,7 @@ class TransactionController extends Controller
         else{
             $transaction = Transaction::where('id', $request->id)->first();
             
-            if($transaction->release_code == $request->release_code){
+            if(isset($transaction) && $transaction->release_code == $request->release_code){
               $transaction = Transaction::where('id', $request->id)->first();
               $transaction->update(array('etat' => COMPLETED_TRANSACTION_STATE ));
               
@@ -451,7 +510,7 @@ class TransactionController extends Controller
     	            $detailsd = [
     	                'subject' => ' You have received a Payment from '.$buyer['mobile_phone'],
     	                'greeting' => 'Hello  ' . $seller['first_name'],
-    	                'body' => 'Great News! the amount for the purchase of '.$transaction['name'].' is available for withdrawal.',
+    	                'body' => 'Great News! the amount for the purchase of "'.$transaction['name'].'" is available for withdrawal.',
     	               // 'body1' => 'Kindly hit the link to proceed.',
     	                'body1' => ' ',
     	                'actionText' => 'Withdraw'.$transaction['price'],
@@ -465,6 +524,10 @@ class TransactionController extends Controller
                     catch (Exception $e){
         		    echo "Error: " . $e->getMessage();
         	 	  }
+        	    $buyerFullname = $buyer['first_name'].' '.$buyer['name'];
+                $message = "Great News! ".$buyerFullname."  has released the amount for the purchase of ".$transaction->name.", your money is now available for withdrawal.";
+                $this->sendTermiiMessage($seller->mobile_phone, $message);
+
             
               $this->sendFcmToDevice("Noworri", " The funds have been successfully released", "Contract completed", TRANSACTIONS_FCM_OPERATION, $buyer['fcm_token']); 
               $this->sendFcmToDevice("Noworri","Congratulations ".$buyer['mobile_phone']." has released the funds", "login to your profile to withdraw", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
@@ -530,6 +593,13 @@ class TransactionController extends Controller
     {
           $ref = $transactionData->payment_id;
           $transactionKey = $transactionData->transaction_key;
+           $validator = Validator::make($transactionData->all(), [
+            "payment_id" => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors());
+        }
+        else{
           
           $curl = curl_init();
   
@@ -542,7 +612,7 @@ class TransactionController extends Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "GET",
             CURLOPT_HTTPHEADER => array(
-              "Authorization: ".PAYSTACK_API_KEY_GH_LIVE,
+              "Authorization: ".PAYSTACK_API_KEY_GH_TEST,
               "Cache-Control: no-cache",
             ),
           ));
@@ -566,7 +636,8 @@ class TransactionController extends Controller
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                     CURLOPT_CUSTOMREQUEST => "GET",
                     CURLOPT_HTTPHEADER => array(
-                      "Authorization: ".PAYSTACK_API_KEY_NG_LIVE,
+                    //   "Authorization: ".PAYSTACK_API_KEY_NG_LIVE,
+                      "Authorization: ".PAYSTACK_API_KEY_GH_LIVE,
                       "Cache-Control: no-cache",
                     ),
                   ));
@@ -577,16 +648,17 @@ class TransactionController extends Controller
                   $result = json_decode($response, true);
 
               }
-            if(isset($result['data'])  && $result['data']['status'] === 'success' && isset($transactionKey)) 
+            if(isset($result['data'])  && $result['data']['status'] === 'success') 
             {
                 $transaction = Transaction::where('payment_id', $ref)->first();
-                if(!$transaction) 
+                if(!$transaction  && isset($transactionKey)) 
                 {
                     Transaction::where('transaction_key', $transactionKey)->update(array('payment_id' => $ref, 'etat' => ACTIVE_TRANSACTION_STATE));
                 }
             }
             return $response;
-          }
+          }   
+        }
     }
     
      public function fetchPaystackTransaction($id)
@@ -781,43 +853,235 @@ class TransactionController extends Controller
                 $seller = User::where('user_uid', $transaction->initiator_id)->first();
                 $buyer = User::where('user_uid', $transaction->destinator_id)->first();
             }
+            
+            $buyerFullname = $buyer['first_name'].' '.$buyer['name'];
+            $message = "Great News! ".$buyerFullname."  has released the amount for the purchase of ".$transaction->name.", your money is now available for withdrawal.";
+            $this->sendTermiiMessage($seller->mobile_phone, $message);
+            
         //   $this->sendFcmToDevice("Noworri", " The funds have been successfully released", "Contract completed", TRANSACTIONS_FCM_OPERATION, $buyer['fcm_token']); 
           $this->sendFcmToDevice("Noworri","Congratulations You withdrawn the funds", "Contract completed", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
-          
+              $account = UserAccountDetail::where('recipient_code', $fields['recipient']);
+              $transferData = [
+                'bank_name'=> $account['bank_name'],
+                'holder_name'=> $account['holder_name'],
+                'account_no'=>$account['account_no'],
+                'recipient'=>$fields['recipient'],
+                'transaction_id'=>$transaction_id,
+                'transaction_date'=>$transaction['created_at'],
+                'currency'=>$fields['currency'],
+                'amount'=>$fields['amount']
+                ];
+              Transfer::create($transferData);
         return  $result;
-      } elseif($response['status']==false && $response['message']=='You cannot initiate third party payouts as a starter business') {
-          $transaction->update(array('etat' => WITHDRAWN_TRANSACTION_STATE ));
-          $account = UserAccountDetail::where('recipient_code', $fields['recipient']);
-          $transferData = [
+      }
+     }
+      catch(Exception $e){
+    		 echo "Error: " . $e->getMessage();
+      }
+    }
+    
+    
+    private function getSpektraToken($encodedKey){
+          $curl = curl_init();
+  
+          curl_setopt_array($curl, array(
+            CURLOPT_URL => "https://api.spektra.co/oauth/token?grant_type=client_credentials",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_HTTPHEADER => array(
+              "Authorization: Basic ".$encodedKey,
+              "Content-Type: application/json",
+            ),
+          ));
+          
+          $response = curl_exec($curl);
+          $err = curl_error($curl);
+          $result = json_decode($response, true);
+
+            if (curl_errno($curl)) {
+                curl_close($curl);
+                return 'Error:' . curl_error($curl);
+            } else {
+                curl_close($curl);
+                return $result;
+            }
+
+    }
+    
+    public function initiateSpektraRefund($account, $data, $transaction_id)
+    {
+      try {
+      $transaction = Transaction::where('id', $transaction_id)->first();
+      $url = "https://api.spektra.co/api/v1/payments/send-money/mobile";
+      $fields = $data;
+      if($account['type'] !== 'mobile_money') {
+        $transferData = [
             'bank_name'=> $account['bank_name'],
             'holder_name'=> $account['holder_name'],
             'account_no'=>$account['account_no'],
             'recipient'=>$fields['recipient'],
             'transaction_id'=>$transaction_id,
-            'transaction_date'=>$transaction_id['created_at'],
+            'transaction_date'=>$transaction['created_at'],
             'currency'=>$fields['currency'],
             'amount'=>$fields['amount']
+        ];
+        Transfer::create($transferData);
+        return  ['status'=>200, 'message'=>'Amount sent'];
+      } else {
+          $apiPublicKey = SPEKTRA_API_PUPLIC_KEY;
+          $apiSecretKey = SPEKTRA_API_SECRET_KEY;
+          $concatenatedKeys = $apiPublicKey.':'.$apiSecretKey;
+          $encodedKey = base64_encode($concatenatedKeys);
+          $tokenResponse = $this->getSpektraToken($encodedKey);
+          $access_token = $tokenResponse['access_token'];
+          $accoun_no = '233'.$account['account_no'];
+          $releaseDetails = [
+              'account' => $accoun_no,
+              'amount' => $fields['amount']
             ];
-          Transfer::create($transferData);
-          if($transaction->initiator_role == TRANSACTION_ROLE_BUY){
-                $buyer = User::where('user_uid', $transaction->initiator_id)->first();
-                $seller = User::where('user_uid', $transaction->destinator_id)->first();
+          
+          $fields_object = json_encode($releaseDetails);
+
+          if(isset($access_token)) {
+            $ch = curl_init();
+    
+            curl_setopt($ch, CURLOPT_URL, 'https://api-test.spektra.co/api/v1/payments/send-money/mobile');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_object);
             
-            }
-            else{
-                $seller = User::where('user_uid', $transaction->initiator_id)->first();
-                $buyer = User::where('user_uid', $transaction->destinator_id)->first();
-            }
-        //   $this->sendFcmToDevice("Noworri", " The funds have been successfully released", "Contract completed", TRANSACTIONS_FCM_OPERATION, $buyer['fcm_token']); 
-          $this->sendFcmToDevice("Noworri","Congratulations You withdrawn the funds", "Contract completed", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
-        $responseData = ['status'=>true, 'message'=>'Transfer details saved for manual processing'];
-        return response()->json($responseData, 200);
-      }
-      }
+            $headers = array();
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Authorization: Bearer '.$access_token;
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            
+            var_dump(curl_exec($ch));
+            var_dump(curl_getinfo($ch));
+            var_dump(curl_error($ch)); 
+    
+            $result = curl_exec($ch);
+                if (curl_errno($ch)) {
+                    return response()->json(['Error' => curl_error($ch)]);
+                } else {
+                    
+                  $response = json_decode($result, true);
+                  if(isset($response['message'])  && $response['message'] === 'Request Processed Successfully')
+                  {
+                    return  ['status'=>200, 'message'=>'Amount sent'];
+                  }
+                
+                 }
+              } else {
+                  return ['status'=>401, 'message'=>'unauthorized'];
+              }
+          }
+      
+        }
+          catch(Exception $e){
+        		 echo "Error: " . $e->getMessage();
+          }
+    }
+
+
+    
+    public function initiateSpektraRelease(Request $data, $transaction_id)
+    {
+      try {
+      $transaction = Transaction::where('id', $transaction_id)->first();
+      $fields = $data->all();
+       $account = UserAccountDetail::where('recipient_code', $fields['recipient'])->first();
+          if($account['type'] !== 'mobile_money') {
+            $transferData = [
+                'bank_name'=> $account['bank_name'],
+                'holder_name'=> $account['holder_name'],
+                'account_no'=>$account['account_no'],
+                'recipient'=>$fields['recipient'],
+                'transaction_id'=>$transaction_id,
+                'transaction_date'=>$transaction['created_at'],
+                'currency'=>$fields['currency'],
+                'amount'=>$fields['amount']
+            ];
+            Transfer::create($transferData);
+            Transfer::create($transferData);
+             $transaction->update(array('etat' => WITHDRAWN_TRANSACTION_STATE ));
+                      if($transaction->initiator_role == TRANSACTION_ROLE_BUY){
+                            $buyer = User::where('user_uid', $transaction->initiator_id)->first();
+                            $seller = User::where('user_uid', $transaction->destinator_id)->first();
+                        
+                        }
+                        else{
+                            $seller = User::where('user_uid', $transaction->initiator_id)->first();
+                            $buyer = User::where('user_uid', $transaction->destinator_id)->first();
+                        }
+                      $this->sendFcmToDevice("Noworri","Congratulations You withdrawn the funds", "Contract completed", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
+                         
+            return  $transferData;
+        } else {
+                  $apiPublicKey = SPEKTRA_API_PUPLIC_KEY;
+                  $apiSecretKey = SPEKTRA_API_SECRET_KEY;
+                  $concatenatedKeys = $apiPublicKey.':'.$apiSecretKey;
+                  $encodedKey = base64_encode($concatenatedKeys);
+                  $tokenResponse = $this->getSpektraToken($encodedKey);
+                  $access_token = $tokenResponse['access_token'];
+                  $accoun_no = '233'.$account['account_no'];
+                  $releaseDetails = [
+                      'account' => $accoun_no,
+                      'amount' => $fields['amount']
+                    ];
+                  
+                  $fields_object = json_encode($releaseDetails);
+                  
+                  if(isset($access_token)) {
+                    $ch = curl_init();
+            
+                    curl_setopt($ch, CURLOPT_URL, 'https://api.spektra.co/api/v1/payments/send-money/mobile');
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                    curl_setopt($ch, CURLOPT_POST, 1);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_object);
+                    
+                    $headers = array();
+                    $headers[] = 'Content-Type: application/json';
+                    $headers[] = 'Authorization: Bearer '.$access_token;
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    
+                    var_dump(curl_exec($ch));
+                    var_dump(curl_getinfo($ch));
+                    var_dump(curl_error($ch)); 
+            
+                    $result = curl_exec($ch);
+        
+                  $response = json_decode($result, true);
+                  if(isset($response['message'])  && $response['message'] === 'Request Processed Successfully')
+                  {
+                          $transaction->update(array('etat' => WITHDRAWN_TRANSACTION_STATE ));
+                          if($transaction->initiator_role == TRANSACTION_ROLE_BUY){
+                                $buyer = User::where('user_uid', $transaction->initiator_id)->first();
+                                $seller = User::where('user_uid', $transaction->destinator_id)->first();
+                            
+                            }
+                            else{
+                                $seller = User::where('user_uid', $transaction->initiator_id)->first();
+                                $buyer = User::where('user_uid', $transaction->destinator_id)->first();
+                            }
+                        //   $this->sendFcmToDevice("Noworri", " The funds have been successfully released", "Contract completed", TRANSACTIONS_FCM_OPERATION, $buyer['fcm_token']); 
+                          $this->sendFcmToDevice("Noworri","Congratulations You withdrawn the funds", "Contract completed", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
+                              
+                            return  $result;
+                }
+              } else {
+                      return response()->json(['status'=>401, 'message'=>'unauthorized']);
+             }
+        }
+     }
       catch(Exception $e){
     		 echo "Error: " . $e->getMessage();
       }
     }
+    
     
     public function releasePaymentPaystack(Request $data)
     {
@@ -952,6 +1216,7 @@ class TransactionController extends Controller
                 if (isset($from) && isset($to)){
                     $transactions = DB::table('transactions')->select('transactions.id', 'transactions.initiator_id as initiator', 'transactions.name', 'transactions.price', 'transactions.destinator_id as destinator', 'transactions.created_at')
                         ->where('initiator_id', $user_id)
+                        // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
                         ->orWhere('destinator_id', $user_id)
                         ->whereBetween('created_at', [$from, $to])
                         ->count();
@@ -959,15 +1224,15 @@ class TransactionController extends Controller
                    $transactions = DB::table('transactions')->select('transactions.id', 'transactions.initiator_id as initiator', 'transactions.name', 'transactions.price', 'transactions.destinator_id as destinator', 'transactions.created_at')
                         ->join('users as initiator', 'initiator.user_uid', '=', 'transactions.initiator_id')
                         ->join('users as destinator', 'destinator.user_uid', '=', 'transactions.destinator_id')
+                        // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
                         ->where('initiator_id', $user_id)
                         ->orWhere('destinator_id', $user_id)
-                        ->orderBy('transactions.id', 'desc')
                         ->count(); 
                 }
         if($transactions) {
             return $transactions;
         } else {
-            return response()->json(['message'=>'User does not exist'],404);
+            return 0;
         }
     }
     
@@ -975,11 +1240,15 @@ class TransactionController extends Controller
         if (isset($from) && isset($to)) {
             $amouts = DB::table('transactions')->where('initiator_id', $user_id)
                 ->orWhere('destinator_id', $user_id)
+                ->where('etat', COMPLETED_TRANSACTION_STATE)
+                // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
                 ->whereBetween('created_at', [$from, $to])
                 ->get('price'); 
         } else {
-        $amouts = DB::table('transactions')->where('initiator_id', $user_id)
-            ->orWhere('destinator_id', $user_id)
+        $amouts = DB::table('transactions')
+            ->where('destinator_id', $user_id)
+            // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
+            ->where('etat', COMPLETED_TRANSACTION_STATE)
             ->get('price');
         }
         if($amouts) {
@@ -987,6 +1256,149 @@ class TransactionController extends Controller
         } else {
             return response()->json(['message'=>'User does not exist'],404);
         }
+    }
+    
+    public function getUserTransactionsProcessedPayouts($user_id, $from, $to) {
+        if (isset($from) && isset($to)) {
+            $amouts = DB::table('transactions')->where('initiator_id', $user_id)
+                ->orWhere('destinator_id', $user_id)
+                ->where('etat', WITHDRAWN_TRANSACTION_STATE)
+                // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
+                ->whereBetween('created_at', [$from, $to])
+                ->get('price'); 
+        } else {
+        $amouts = DB::table('transactions')
+            ->where('destinator_id', $user_id)
+            // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
+            ->where('etat', WITHDRAWN_TRANSACTION_STATE)
+            ->get('price');
+        }
+        if($amouts) {
+            return $amouts;
+        } else {
+            return response()->json(['message'=>'User does not exist'],404);
+        }
+    }
+    
+    // public function getUserTransactionsPendingPayouts($user_id, $from, $to) {
+    //     if (isset($from) && isset($to)) {
+    //         $amouts = DB::table('transactions')->where('initiator_id', $user_id)
+    //             ->orWhere('destinator_id', $user_id)
+    //             ->where('etat', COMPLETED_TRANSACTION_STATE)
+    //             ->whereBetween('created_at', [$from, $to])
+    //             ->get('price'); 
+    //     } else {
+    //     $amouts = DB::table('transactions')
+    //         ->where('destinator_id', $user_id)
+    //         ->where('etat', COMPLETED_TRANSACTION_STATE)
+    //         ->get('price');
+    //     }
+    //     if($amouts) {
+    //         return $amouts;
+    //     } else {
+    //         return response()->json(['message'=>'User does not exist'],404);
+    //     }
+    // }
+    
+     public function getUserTransactionsHeld($user_id, $from, $to) {
+        if (isset($from) && isset($to)) {
+            $amouts = DB::table('transactions')
+                ->where('etat', ACTIVE_TRANSACTION_STATE)
+                // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
+                ->where('destinator_id', $user_id)
+                ->whereBetween('created_at', [$from, $to])
+                ->get('price'); 
+        } else {
+        $amouts = DB::table('transactions')->where('initiator_id', $user_id)
+            ->where('destinator_id', $user_id)
+            // ->where('transaction_source', TRANSACTION_SOURCE_ECOM)
+            ->where('etat', ACTIVE_TRANSACTION_STATE)
+            ->get('price');
+        }
+        if($amouts) {
+            return $amouts;
+        } else {
+            return response()->json(['message'=>'User does not exist'],404);
+        }
+    }
+    
+     public function getAdminSummary() {
+        $businesses = DB::table('businesses')->get()->count();
+        $vendors = DB::table('trusted_companies')
+        ->where('state', 'approved')->get()->count();
+        $users = DB::table('users')->get()->count();
+        
+        $summary = [
+                'Businesses' => $businesses,
+                'Vendors' => $vendors,
+                'Users' => $users
+            ];
+        return response()->json($summary);
+    }
+    
+    public function getUserTransactionsSummary(Request $request, $user_id) {
+        $from = $request->from;
+        $to = $request->to;
+        // $from = '2020-11-11';
+        // $to = '2020-11-28';
+        $revenueData = $this->getUserTransactionsRevenue($user_id , $from, $to);
+        $lockedFunds = $this->getUserTransactionsHeld($user_id , $from, $to);
+        $revenuesList = [];
+        $payoutsList = [];
+        $processedPayoutsData = $this->getUserTransactionsProcessedPayouts($user_id , $from, $to);
+        foreach($revenueData as $revenue) {
+            $revenue->revenueAmount = $this->getAmountFromPrice($revenue->price);
+            array_push($revenuesList, $revenue->revenueAmount);
+        }
+        foreach($processedPayoutsData as $processedPayout) {
+            $processedPayout->payoutAmount = $this->getAmountFromPrice($processedPayout->price);
+            array_push($payoutsList, $processedPayout->payoutAmount);
+        }
+        $lockedList = [];
+        foreach($lockedFunds as $locked) {
+            $locked->revenueAmount = $this->getAmountFromPrice($locked->price);
+            array_push($lockedList, $locked->revenueAmount);
+        }
+        $totalProcessedPayout = round((array_sum($payoutsList)), 2);
+        $totalRevenue = round((array_sum($revenuesList)), 2);
+        $totalPayouts = $totalRevenue - $totalProcessedPayout;
+        $totalAmountLocked = round((array_sum($lockedList)), 2);
+        $totalTransactions = $this->getUserTransactionsCount($user_id, $from, $to);
+        $response = [
+            'totalAmountLocked'=>$totalAmountLocked,
+            'totalTransactions'=>$totalTransactions,
+            'totalRevenue'=> $totalRevenue,
+            'totalPayouts'=> $totalPayouts,
+        ];
+        return $response;
+    }
+    
+    public function getTransactionByUser(Request $request, $user_id)
+    {
+        $from = $request->from;
+        $to = $request->to;
+            
+        if (isset($from) && isset($to)) {
+         $transactions = DB::table('transactions')
+            ->where('initiator_id', $user_id)
+            ->orWhere('destinator_id', $user_id)
+            ->whereBetween('transactions.created_at', [$from, $to])
+            ->join('users as initiator', 'initiator.user_uid', '=', 'transactions.initiator_id')
+            ->join('users as destinator', 'destinator.user_uid', '=', 'transactions.destinator_id')
+            ->select('transactions.*', 'initiator.mobile_phone as initiator_phone', 'destinator.mobile_phone as destinator_phone', 'destinator.first_name as destinator_name', 'initiator.first_name as initiator_name')
+            ->orderBy('transactions.id', 'desc')
+            ->get();
+        } else {
+         $transactions = DB::table('transactions')
+            ->join('users as initiator', 'initiator.user_uid', '=', 'transactions.initiator_id')
+            ->join('users as destinator', 'destinator.user_uid', '=', 'transactions.destinator_id')
+            ->select('transactions.*', 'initiator.mobile_phone as initiator_phone', 'destinator.mobile_phone as destinator_phone', 'destinator.first_name as destinator_name', 'initiator.first_name as initiator_name')
+            ->where('initiator_id', $user_id)
+            ->orWhere('destinator_id', $user_id)
+            ->orderBy('transactions.id', 'desc')
+            ->get();
+        }
+        return $transactions;
     }
     
     private function getNoworriBuyerFee($price) {
@@ -1000,7 +1412,7 @@ class TransactionController extends Controller
     }
     
     private function getNoworriBusinessClientFee($price) {
-            $fee = strval(($price / 100) * 1.98);
+            $fee = strval(($price / 100) * 1);
             return round($fee, 2);
     }
     
@@ -1014,29 +1426,13 @@ class TransactionController extends Controller
             $amount = $price - $fee;
             return round($amount, 2);
     }
-    public function getUserTransactionsSummary(Request $request, $user_id) {
-        $from = $request->from;
-        $to = $request->to;
-        // $from = '2020-11-11';
-        // $to = '2020-11-28';
-        $revenueData = $this->getUserTransactionsRevenue($user_id , $from, $to);
-        $revenuesList = [];
-        foreach($revenueData as $revenue) {
-            $revenue->revenueAmount = $this->getAmountFromPrice($revenue->price);
-            array_push($revenuesList, $revenue->revenueAmount);
-        }
-        $totalRevenue = array_sum($revenuesList);
-        $totalTransactions = $this->getUserTransactionsCount($user_id, $from, $to);
-        // return $totalRevenue;
-        $response = [
-            // 'totalAmountLocked'=>'',
-            'totalTransactions'=>$totalTransactions,
-            'totalRevenue'=> $totalRevenue,
-            // 'totalPayouts'=>'',
-        ];
-        
-        return $response;
+    
+    private function getBuyerRefundAmountFromPrice($price) {
+            $fee = $this->getNoworriBuyerFee($price);
+            $amount = $price - $fee;
+            return round($amount, 2);
     }
+
 
     public function getTransaction($user_id)
     {
@@ -1049,24 +1445,13 @@ class TransactionController extends Controller
         return $transactions;
     }
 
-    public function getTransactionByUser($user_id)
-    {
-        $transactions = DB::table('transactions')
-            ->join('users as initiator', 'initiator.user_uid', '=', 'transactions.initiator_id')
-            ->join('users as destinator', 'destinator.user_uid', '=', 'transactions.destinator_id')
-            ->select('transactions.*', 'initiator.mobile_phone as initiator_phone', 'destinator.mobile_phone as destinator_phone')
-            ->where('initiator_id', $user_id)
-            ->orWhere('destinator_id', $user_id)
-            ->orderBy('transactions.id', 'desc')
-            ->get();
-
-        return $transactions;
-    }
-
     public function getTransactionByTransactionId($transaction_id)
     {
         $transactions = DB::table('transactions')->select()
             ->where('transaction_key', $transaction_id)
+            ->join('users as initiator', 'initiator.user_uid', '=', 'transactions.initiator_id')
+            ->join('users as destinator', 'destinator.user_uid', '=', 'transactions.destinator_id')
+            ->select('transactions.*', 'initiator.country_code as initiator_country_code', 'initiator.mobile_phone as initiator_phone', 'destinator.mobile_phone as destinator_phone', 'destinator.first_name as destinator_name', 'initiator.first_name as initiator_name', 'destinator.name as destinator_first_name', 'initiator.name as initiator_first_name')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -1250,6 +1635,15 @@ class TransactionController extends Controller
                     else{
                      $destinator = User::where('user_uid', $transaction->initiator_id)->first();
                     }
+                    
+                    $buyerAccount = UserAccountDetail::where('user_id', $buyer['user_uid']);
+                    $amount = $this->getBuyerRefundAmountFromPrice($transaction->price);
+                    $data = [
+                        'recipient' => $buyerAccount['recipient_code'],
+                        'currency' => $transaction->currency,
+                        'amount' => $amount
+                    ];
+
                     $amount = strval($transaction->price * 100);
                     $refundData = [
                         'transaction' => $transaction->payment_id,
@@ -1277,7 +1671,8 @@ class TransactionController extends Controller
                                 $canceledBy->notify(new EscrowNotification($details_init));
                                 
                      try {
-                        $this->initiateRefund($refundData);
+                        // $this->initiateRefund($refundData);
+                            	  $this->initiateSpektraRefund($buyerAccount, $data, $transaction['id']);
 	            
                             }
                             catch (Exception $e){
@@ -1376,7 +1771,9 @@ class TransactionController extends Controller
                     $buyer = User::where('user_uid', $transaction->destinator_id)->first();
                 }
                 
-                $sms_result = $this->sendReleaseCode($transaction->delivery_phone, $transaction_data->release_code);
+                $sellerFullName = $seller['first_name'].' '.$seller['name'];
+                $buyerFullname = $buyer['first_name'].' '.$buyer['name'];
+                $sms_result = $this->sendReleaseCode($transaction->delivery_phone, $transaction_data->release_code, $sellerFullName, $buyerFullname);
 
                     
                 $this->sendFcmToDevice("Noworri", "The phone number of the deliveryman has been changed to ".$request->deliver, "Noworri", TRANSACTIONS_FCM_OPERATION, $seller['fcm_token']); 
@@ -1549,21 +1946,49 @@ class TransactionController extends Controller
     }
     
     public function checkTransferQueue() {
-        $queue = [
-            [
-                'id' => '01',
-                'phone_no' => '+233515214072',
-                'amount' => '2345',
-                'currency' => 'GHS'
-            ],
-            [
-                'id' => '02',
-                'phone_no' => '+234515214043',
-                'amount' => '4562',
-                'currency' => 'NGN'
-            ]
-        ];
+        // $queue = [
+        //     [
+        //         'id' => '01',
+        //         'phone_no' => '+233515214072',
+        //         'amount' => '2345',
+        //         'currency' => 'GHS'
+        //     ],
+        //     [
+        //         'id' => '02',
+        //         'phone_no' => '+234515214043',
+        //         'amount' => '4562',
+        //         'currency' => 'NGN'
+        //     ]
+        // ];
+        //  $queue =
+        //     [
+        //         'id' => '01',
+        //         'phone_no' => '+233515214072',
+        //         'amount' => '2345',
+        //         'currency' => 'GHS'
+        //     ];
         
+        $queue = MobileTransfer::latest()->first();
         return $queue;
+    }
+    public function updateTransferQueue(Request $data) {
+        try {
+        $transactionData = $data->all();
+        if(isset($transactionData['id']) || isset($transactionData['start_balance']) || isset($transactionData['end_balance'])) {
+               $transactionQueue = MobileTransfer::where('id', $data->id)->first();
+                       if(isset($data->start_balance) && isset($data->end_balance)) {
+                            $transactionQueue->update(['start_balance'=> $data->start_balance, 'end_balance'=> $data->end_balance]);
+                } else {
+                    $transactionQueue->update(['start_balance'=> $data->start_balance]);
+                }
+               return response()->json($transactionQueue);
+        }else {
+            $transactionQueue = MobileTransfer::create($transactionData);
+               return response()->json($transactionQueue);
+        }
+        } catch (Exception $e){
+                        $response = 'something weird happened';
+            		    echo "Error: " . $e->getMessage();
+        }        
     }
 }

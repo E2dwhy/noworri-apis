@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
 use App\ModuleMessage;
+use App\ModuleFile;
+use Illuminate\Http\File;
+use Illuminate\Support\Facades\Storage;
+
+const TERMII_API_KEY = "TLPpodZHjnglaYQHEknDbeuzjWyYrfmLAqROer0oD2W6TjjFPxR0xqaNvdq4vK";
 
 class SmsController extends Controller
 {
@@ -74,7 +79,10 @@ public function verifyContact(Request $request)
 
 public function deleteMessage() {
     try {
-             $dbMessages = ModuleMessage::truncate();
+            //  $dbMessages = ModuleMessage::truncate();
+            
+            $dbMessages = ModuleMessage::whereNotIn('id', [1])->delete();
+
         // if(!$dbMessages) {
         //     return response()->json(['status'=>'failed', 'message'=>'message does not exist']);
         // } else {
@@ -96,7 +104,7 @@ public function sendMessage(Request $data) {
         $response = response()->json(['status'=>'success', 'message'=>'message sent']);
         if(isset($messageData['id'])) {
                $dbMessages = ModuleMessage::where('id', $data->id);
-                $dbMessages->update(['message'=> $data->message]);
+               $dbMessages->update(['message'=> $data->message]);
                 return $response;
         }else {
             ModuleMessage::create(['message'=>$data->message]);
@@ -109,12 +117,91 @@ public function sendMessage(Request $data) {
     return $response;
 }
 
+
+public function sendFileMessage(Request $request) {
+    
+    $messageData = $request->all();
+    $messageFile = $request->file('file');
+
+    try{
+        if(isset($messageFile)) {
+
+                    $extansion = $messageFile->getClientOriginalExtension();
+                    $fileName = $messageFile->getClientOriginalName();
+                    $uniqueFileName = str_replace("/tmp/","",$messageFile);
+                    $messageData['file'] = $uniqueFileName;
+                    $messageFile->move(public_path().'/uploads/module/'.$fileName);
+                    // $dbFileMessages = ModuleFile::create($messageData);
+                    return response()->json(['status'=>'success', 'message'=>'File has been saved', 'path'=>"https://noworri.com/api/public/uploads/module/$fileName/$uniqueFileName"]);
+
+        } else {
+            return response()->json(['status'=>'failure', 'message'=>'No File has been detected', 'dataSent'=>$messageData]);
+        }
+        
+    } catch (Exception $e){
+                    $response = 'something weird happened';
+        		    return "Error: " . $e->getMessage();
+    }
+}
+
+public function downloadFile(Request $request) {
+    $ref = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; 
+    $filename = substr(str_shuffle($ref), 0, 6);
+    $tempFile = tempnam(sys_get_temp_dir(), "$filename.bin");
+    copy($request->url, $tempFile);
+    
+    return response()->download($tempFile, $filename);
+}
+
 public function getMessages() {
     $messages = DB::table('module_messages')->get();
     return $messages;
 } 
 
 
+public function getMessageById($id) {
+    $message = ModuleMessage::where('id', $id)->first();
+    if (!$message) {
+        return response()->json(['status'=>'Failed', 'message'=>'No Message found with this id'], 404);
+    }
+    return $message;
+}
+
+public function TermiiMessaging(Request $request) {
+    $smsmData = $request->all();
+    $curl = curl_init();
+    
+    $data = array(
+        "to" => $smsmData['phoneNumber'],
+        "from" => "Noworri",
+        "sms"=>$smsmData['message'],
+        "type" =>"plain",
+        "channel" => "generic",
+        "api_key" => TERMII_API_KEY);
+    
+    $post_data = json_encode($data);
+    
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => "https://termii.com/api/sms/send",
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => "",
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => "POST",
+      CURLOPT_POSTFIELDS => $post_data,
+      CURLOPT_HTTPHEADER => array(
+        "Content-Type: application/json"
+      ),
+    ));
+    
+    $response = curl_exec($curl);
+    
+    curl_close($curl);
+    return $response;
+
+}
 
 
 

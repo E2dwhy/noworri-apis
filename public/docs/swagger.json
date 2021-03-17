@@ -35,16 +35,7 @@
           {
             "in": "query",
             "name": "user_id",
-            "description": "the id genrate for your business on registration",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "item_ids",
-            "description": "comma seperated list of the ids of items that your customer is purchasing (the ids that you use to identify your products)",
+            "description": "the id genrated for your you on registration",
             "required": true,
             "schema": {
               "type": "string"
@@ -53,37 +44,30 @@
           {
             "in": "query",
             "name": "items",
-            "description": "comma seperated list of item names that your customer is purchasing",
+            "description": "an array of objects that contains details about the item (name: string, item_id: string, item_qty: string, item_qty: string, price: string, description: string)",
             "required": true,
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "items_qty",
-            "description": "comma seperated list of item quantities that your customer is purchasing",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "prices",
-            "description": "comma seperated prices of items that your customer is purchasing in the same order as items",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "descriptions",
-            "description": "comma seperated short descriptions of items that your customer is purchasing",
-            "required": true,
-            "schema": {
-              "type": "string"
+              "type": "array",
+              "items":{
+                  "type": "object",
+                  "properties": {
+                      "name": {
+                          "type": "string"
+                      },
+                      "item_id": {
+                          "type": "string"
+                      } ,
+                      "item_qty": {
+                        "type": "string"
+                      },
+                      "price": {
+                         "type": "string"
+                      },
+                      "description": {
+                          "type": "string"
+                      }
+                  }
+                }
             }
           },
           {
@@ -248,7 +232,7 @@
                     "name": {
                       "type": "string"
                     },
-                    "fits_name": {
+                    "first_name": {
                       "type": "string",
                       "format": "byte"
                     },

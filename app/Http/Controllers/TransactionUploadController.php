@@ -78,6 +78,12 @@ public function generatePin(){
             
             $photo->move(public_path().'/uploads/trs/upf', $photoname);
             
+            $transactionId = $request->transaction_id;
+            if(isset($transactionId)) {
+                $transaction = TestTransaction::where('id', $transactionId)->first();
+                $transaction->update(['proof_of_payment'=> $filename]);
+            }
+            
              $result = array();
              $result['success'] = "file uploaded successfully";
              $result['path'] = $photoname;

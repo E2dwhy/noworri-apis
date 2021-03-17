@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Validator, Input, Redirect, Response, JWTAuth,JWTFactory ; 
 use App\User;
+use App\AdminUser;
 use App\Business;
 use App\Notifications\EscrowNotification;
 use App\Notifications\RegisterNotification;
@@ -84,8 +85,8 @@ private function checkCredentials($credentials) {
         }
 }
 
-public function getUserByPhoneNumber(Request $phoneNumber){
-    $number = '+'.$phoneNumber->user_phone;
+public function getUserByPhoneNumber(Request $request){
+    $number = $request->user_phone;
     $user = User::where('mobile_phone', $number)->first();
     return $user;
 }
@@ -333,6 +334,7 @@ public function register(Request $request)
             'user_name'       => 'required|string|max:50|unique:users',
             'country_code'       => 'required|string',
             'dailing_code' => 'required|string',
+            'web_token' => 'required|string',
             // 'photo'       => 'image|jpg,png',
             // 'buyer'       => 'boolean',
             // 'seller'       => 'boolean',
@@ -350,6 +352,9 @@ public function register(Request $request)
             $user_data['type'] = 0;
             $user_data['currency'] = $this->getCurrency($user_data['dailing_code']) ;
             $user_data['otp'] = $this->generatePin();
+            if(!isset($user_data['web_token'])) {
+                $user_data['web_token'] = $user_data['otp'];
+            }
             
             $user = User::create($user_data);
             $token = auth()->login($user);
@@ -579,6 +584,26 @@ public function getCurrency($code)
     $currentUser = array_merge($user->toArray(), ['token' => $token, 'token_type' => 'bearer','expires_in' => auth()->factory()->getTTL() * 60 * 24 * 7 * 60]);
     return response()->json(compact('currentUser'));
 
+
+   }
+   
+    public function adminLogin(Request $request)
+   {
+    $user = DB::table('admin_users')->where('email', $request->email)->first();
+    $pswd = md5($request->pwd);
+    if ($user && $user->password === $pswd){
+        $data = [
+            'status'=>'authenticated',
+            'data' => [
+            'username'=>$user->username,
+            'id'=>$user->id,
+            'created_at'=>$user->created_at
+            ]
+            ];
+            return response()->json($data);
+    } else {
+        return response()->json(['status'=>401, 'message'=>'Unauthorized user']);
+    }
 
    }
    

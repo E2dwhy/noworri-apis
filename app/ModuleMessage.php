@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ModuleMessage extends Model
 {
  protected $fillable = [
-         'message', 'id'
+         'message', 'id', 'start_balance', 'end_balance'
           ];
     
 }

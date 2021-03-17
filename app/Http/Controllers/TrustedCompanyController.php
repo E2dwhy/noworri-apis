@@ -132,7 +132,7 @@ public function verifyAddiPhone(Request $request)
     public function payForTrustZone(Request $data)
     {
         $fields = $data->all();
-        $apiKey = PAYSTACK_API_KEY_GH_LIVE;
+        $apiKey = PAYSTACK_API_KEY_GH_TEST;
         $url = "https://api.paystack.co/transaction/initialize";
         if ($fields['currency'] == CURRENCY_GH) {
             $fields['amount'] = strval(60 * 100);
@@ -181,7 +181,7 @@ public function verifyAddiPhone(Request $request)
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "GET",
             CURLOPT_HTTPHEADER => array(
-              "Authorization: ".PAYSTACK_API_KEY_GH_LIVE,
+              "Authorization: ".PAYSTACK_API_KEY_GH_TEST,
               "Cache-Control: no-cache",
             ),
           ));
@@ -216,12 +216,12 @@ public function verifyAddiPhone(Request $request)
             $result = json_decode($response, true);
             if ($err) {
             return "cURL Error #:" . $err;
-          } else {
-            return $response;
-          }
+              } else {
+                return $response;
+              }
             }
             return $response;
-          }
+        }
     }
     
     public function store(Request $request)
@@ -282,7 +282,7 @@ public function verifyAddiPhone(Request $request)
            
         $company_data = $request->all();
         
-        $company_data['country'] = 'Ghana'; 
+        $company_data['country'] = $company_data['country'] === NULL ? 'Ghana' : $company_data['country']; 
         
         // $company_data->profilpicture = $ppname;
         // $company_data->identitycardfile = $icfname;
@@ -593,7 +593,7 @@ public function generatePin(){
 //                     ->get();
     
 //     return response()->json($companies);
-        $trustedCompany = TrustedCompany::all();
+        $trustedCompany = TrustedCompany::orderBy('created_at', 'desc')->get();
  
         return $trustedCompany;
   }

@@ -15,7 +15,7 @@ class Transaction extends Model
      * @var array
      */
     protected $fillable = [
-        'initiator_id', 'initiator_role', 'destinator_id',   'transaction_type', 'name', 'price', 'currency', 'deadDays', 'deadHours', 'start', 'release_code', 'release_wrong_code', 'deadline', 'revision', 'requirement', 'transaction_key', 'etat', 'deleted', 'delivery_phone', 'payment_id',
+        'initiator_id', 'initiator_role', 'destinator_id',   'transaction_type', 'name', 'price', 'currency', 'deadDays', 'deadHours', 'start', 'release_code', 'transaction_source', 'release_wrong_code', 'deadline', 'revision', 'requirement', 'transaction_key', 'etat', 'deleted', 'delivery_phone', 'payment_id', 'items',
         'qty_of_crypto', 'rate', 'buyer_wallet', 'proof_of_payment'
     ];
 
