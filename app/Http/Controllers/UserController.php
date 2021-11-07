@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\User;
+use App\Business;
+use DB;
+use Hash;
 
 
 class UserController extends Controller
@@ -15,9 +18,44 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
+        $users = User::orderBy('created_at', 'desc')->get();
  
         return $users;
+    }
+    
+    
+    public function getNoworriUsers(Request $request) {
+        $credentials = $request->headers->get('Authorization');
+        $hasValidCredentials = $this->checkCredentials($credentials);
+        if($hasValidCredentials === true) {
+            return $this->index();
+        } else {
+            return response()->json(['message' => 'Unauthorized user. Request can\'t be completed'], 401);
+        }
+    }
+    
+    public function getUsers(Request $request) {
+       $token = $request->token;
+       $userToken = DB::table('admin_users')->where('token', $token)->first();
+       if(isset($userToken->token) && strlen($userToken->token) > 5 ) {
+            return $this->index();
+        } else {
+            return response()->json(['message' => 'Unauthorized user. Request can\'t be completed'], 401);
+        }
+
+    }
+    
+    private function checkCredentials($credentials) {
+        $credentials = str_replace('Bearer', '', $credentials);
+        $client = Business::where('api_key_live', trim($credentials))
+                        ->orWhere('api_key_test', trim($credentials))
+                        ->first();
+                        
+        if($client) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**

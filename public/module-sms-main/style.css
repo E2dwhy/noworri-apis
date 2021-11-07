@@ -1,0 +1,62 @@
+* {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    padding: 2em;
+    /* margin: 2em; */
+    justify-content: center;
+    align-items: center;
+    border: 1px solid black;
+    min-width: 400px;
+    width: 80vw;
+}
+
+.send {
+    width: 100%;
+    padding: 1em 0;
+}
+
+.exchange {
+    width: 60vw;
+}
+
+form {
+    display: flex;
+    justify-content: space-between;
+}
+
+input[type="text"] {
+    width: 80%;
+}
+
+button {
+    padding: 0 0.5em;
+}
+
+p {
+    padding: 0.5em 0;
+}
+
+#data {
+    text-align: justify;
+    height: 60vh;
+    max-height: 60vh;
+    width: 100%;
+    overflow-y: scroll;
+    padding: 1em 0;
+    background: #eee;
+}

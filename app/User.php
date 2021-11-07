@@ -17,11 +17,11 @@ class User extends Authenticatable implements JWTSubject
      * @var array
      */
     protected $fillable = [
-        'name',
+        'name','user_uid',
         'email',
         'password', 
         'first_name',
-        'user_name', 'code', 'mobile_phone', 'country', 'photo', 'buyer', 'seller', 'type', 'account',
+        'user_name', 'dailing_code', 'currency', 'mobile_phone', 'country_code', 'otp', 'photo', 'avatar', 'buyer', 'seller', 'type', 'account', 'fcm_token', 'web_token', 'status'
     ];
 
     /**
@@ -48,26 +48,31 @@ class User extends Authenticatable implements JWTSubject
     *
     * @return mixed
     */
-   public function getJWTIdentifier()
-   {
-       return $this->getKey();
-   }
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
  
    /**
     * Return a key value array, containing any custom claims to be added to the JWT.
     *
     * @return array
     */
-   public function getJWTCustomClaims()
-   {
-       return [];
-   }
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
  
    public function setPasswordAttribute($password)
    {
        if ( !empty($password) ) {
            $this->attributes['password'] = bcrypt($password);
        }
+   }
+      public function updateModel($request)
+   {
+     $this->update($request->all());
+     return $this;
    }
 
 }

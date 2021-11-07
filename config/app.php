@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'noworri-api'),
 
 
 
@@ -21,6 +21,13 @@ return [
     'TWILIO_AUTH_TOKEN'  => env('TWILIO_AUTH_TOKEN'),
     'TWILIO_ACCOUNT_SID' => env('TWILIO_ACCOUNT_SID'),
    // 'TWILIO_APP_SID'     => env('TWILIO_APP_SID')
+],
+   
+
+'AppNMobile' => [
+    'CLIENT_KEY'  => env('CLIENT_KEY'),
+    'CLIENT_SECRET' => env('CLIENT_SECRET'),
+    'SERVICE_ID'     => env('SERVICE_ID')
 ],
     /*
     |--------------------------------------------------------------------------
@@ -59,7 +66,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://api.noworri.com'),
 
     'asset_url' => env('ASSET_URL', null),
 
@@ -168,6 +175,8 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
+        // Unicodeveloper\Paystack\PaystackServiceProvider::class,
+        
 
         /*
          * Package Service Providers...
@@ -181,6 +190,8 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+	   // LaravelFCM\src\FCMServiceProvider::class,
+	   LaravelFCM\FCMServiceProvider::class,
 
     ],
 
@@ -232,6 +243,14 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
+        'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
+        'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
+        // 'Paystack' => Unicodeveloper\Paystack\Facades\Paystack::class,
+    //     'FCM'      => LaravelFCM\src\Facades\FCM::class,
+	   // 'FCMGroup' => LaravelFCM\src\Facades\FCMGroup::class, // Optional,
+	   
+	    'FCM'      => LaravelFCM\Facades\FCM::class,
+	    'FCMGroup' => LaravelFCM\Facades\FCMGroup::class, // Optional
 
     ],
 

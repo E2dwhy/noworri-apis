@@ -1,0 +1,45 @@
+# .htaccess main domain to subfolder redirect
+# Copy and paste the following code into the .htaccess file
+# in the public_html folder of your hosting account
+# make the changes to the file according to the instructions.
+  
+# Do not change this line.
+# RewriteEngine on
+  
+# Change yourdomain.com to be your main domain.
+# RewriteCond %{HTTP_HOST} ^(www.)?noworri.com$
+  
+# Change 'subfolder' to be the folder you will use for your main domain.
+# RewriteCond %{REQUEST_URI} !^/web/
+
+# RewriteBase /web/
+  
+# Don't change this line.
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+  
+# Change 'subfolder' to be the folder you will use for your main domain.
+# RewriteRule ^(.*)$ /web/$1
+  
+# Change yourdomain.com to be your main domain again.
+# Change 'subfolder' to be the folder you will use for your main domain
+# followed by / then the main file for your site, index.php, index.html, etc.
+  
+# RewriteCond %{HTTP_HOST} ^(www.)?noworri.com$
+# RewriteRule ^(/)?$ /web/index.html [L]
+
+<IfModule mod_rewrite.c>
+<IfModule mod_negotiation.c>
+    Options -MultiViews -Indexes
+</IfModule>
+
+<IfModule mod_headers.c> 
+ Header always set Access-Control-Allow-Origin "*"
+ Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+ Header always set Access-Control-Max-Age "1000"
+ Header always set Access-Control-Allow-Headers "*"
+#  Header always set Access-Control-Allow-Headers "Origin, Accept, Accept-  Version,  Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-api-key, X-Response-Time, X-PINGOTHER, X-CSRF-Token,Authorization"
+ Header always set Access-Control-Expose-Headers "*"
+</IfModule>
+
+RewriteEngine On

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<link rel="stylesheet" href="style.css">
+
+<body onload="cleanSerial();">
+    <div class="container">
+        <div class="upload-div">
+            <form id="upload" method="POST" enctype="multipart/form-data">
+                <input type="file" name="update">
+                <button type="update" , name="submit">Update</button>
+                <!-- TODO: Progress bar -->
+            </form>
+        </div>
+        <div class="exchange">
+            <div class="send">
+                <form id="myForm">
+                    <!-- Post to route -->
+                    <input type="text" name="message" id="serial_message">
+                    <!-- <input type="submit" name="submit"> -->
+                    <button name="submit">Send</button>
+                </form>
+            </div>
+            <div id="data">
+                <!-- overflow auto -->
+                <!-- Get data from route -->
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="script.js"></script>
+
+</html>
